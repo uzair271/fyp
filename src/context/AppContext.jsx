@@ -113,6 +113,22 @@ export const AppProvider = ({ children }) => {
   const [users, setUsers] = useState([
     {
       id: 1,
+      name: 'Admin User',
+      email: 'admin@example.com',
+      role: 'admin',
+      phone: '+1 (555) 000-0000',
+      status: 'Active',
+    },
+    {
+      id: 2,
+      name: 'Mechanic User',
+      email: 'mechanic@example.com',
+      role: 'mechanic',
+      phone: '+1 (555) 111-1111',
+      status: 'Active',
+    },
+    {
+      id: 3,
       name: 'John Doe',
       email: 'john.doe@example.com',
       role: 'customer',
@@ -120,7 +136,7 @@ export const AppProvider = ({ children }) => {
       status: 'Active',
     },
     {
-      id: 2,
+      id: 4,
       name: 'Jane Smith',
       email: 'jane.smith@example.com',
       role: 'customer',
@@ -128,7 +144,7 @@ export const AppProvider = ({ children }) => {
       status: 'Active',
     },
     {
-      id: 3,
+      id: 5,
       name: 'Mike Johnson',
       email: 'mike.johnson@example.com',
       role: 'mechanic',
@@ -136,7 +152,7 @@ export const AppProvider = ({ children }) => {
       status: 'Active',
     },
     {
-      id: 4,
+      id: 6,
       name: 'Sarah Williams',
       email: 'sarah.williams@example.com',
       role: 'mechanic',
@@ -144,7 +160,7 @@ export const AppProvider = ({ children }) => {
       status: 'Active',
     },
     {
-      id: 5,
+      id: 7,
       name: 'David Brown',
       email: 'david.brown@example.com',
       role: 'customer',
@@ -183,17 +199,108 @@ export const AppProvider = ({ children }) => {
       // Placeholder API integration
       console.log('Logging in with:', credentials)
       
-      // Simulate API call
+      // Default admin credentials
+      const ADMIN_EMAIL = 'admin@example.com'
+      const ADMIN_PASSWORD = 'admin123'
+      
+      // Default mechanic credentials
+      const MECHANIC_EMAIL = 'mechanic@example.com'
+      const MECHANIC_PASSWORD = 'mechanic123'
+      
+      // Check for admin login
+      if (credentials.email === ADMIN_EMAIL && credentials.password === ADMIN_PASSWORD) {
+        const adminResponse = {
+          user: {
+            id: 1,
+            name: 'Admin User',
+            email: ADMIN_EMAIL,
+            role: 'admin',
+          },
+          token: 'mock-jwt-token-admin',
+          role: 'admin',
+        }
+
+        setAuthState({
+          user: adminResponse.user,
+          token: adminResponse.token,
+          role: adminResponse.role,
+        })
+
+        // Store in localStorage
+        localStorage.setItem('authToken', adminResponse.token)
+        localStorage.setItem('user', JSON.stringify(adminResponse.user))
+        localStorage.setItem('userRole', adminResponse.role)
+
+        return adminResponse
+      }
+      
+      // Check for mechanic login
+      if (credentials.email === MECHANIC_EMAIL && credentials.password === MECHANIC_PASSWORD) {
+        const mechanicResponse = {
+          user: {
+            id: 2,
+            name: 'Mechanic User',
+            email: MECHANIC_EMAIL,
+            role: 'mechanic',
+          },
+          token: 'mock-jwt-token-mechanic',
+          role: 'mechanic',
+        }
+
+        setAuthState({
+          user: mechanicResponse.user,
+          token: mechanicResponse.token,
+          role: mechanicResponse.role,
+        })
+
+        // Store in localStorage
+        localStorage.setItem('authToken', mechanicResponse.token)
+        localStorage.setItem('user', JSON.stringify(mechanicResponse.user))
+        localStorage.setItem('userRole', mechanicResponse.role)
+
+        return mechanicResponse
+      }
+      
+      // Check if user exists in users array
+      const existingUser = users.find(u => u.email === credentials.email)
+      if (existingUser) {
+        // For demo purposes, accept any password for existing users
+        const userResponse = {
+          user: {
+            id: existingUser.id,
+            name: existingUser.name,
+            email: existingUser.email,
+            role: existingUser.role,
+          },
+          token: `mock-jwt-token-${existingUser.id}`,
+          role: existingUser.role,
+        }
+
+        setAuthState({
+          user: userResponse.user,
+          token: userResponse.token,
+          role: userResponse.role,
+        })
+
+        // Store in localStorage
+        localStorage.setItem('authToken', userResponse.token)
+        localStorage.setItem('user', JSON.stringify(userResponse.user))
+        localStorage.setItem('userRole', userResponse.role)
+
+        return userResponse
+      }
+      
+      // Simulate API call for new users
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       })
 
-      // Placeholder response
+      // Default response for new users (customer role)
       const mockResponse = {
         user: {
-          id: 1,
+          id: Date.now(),
           name: credentials.email?.split('@')[0] || 'User',
           email: credentials.email,
           role: 'customer',
@@ -218,7 +325,7 @@ export const AppProvider = ({ children }) => {
       console.error('Login error:', error)
       throw error
     }
-  }, [])
+  }, [users])
 
   const register = useCallback(async (userData) => {
     try {

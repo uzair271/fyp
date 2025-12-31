@@ -1,167 +1,30 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useContext, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import RequestList from '../components/RequestList'
 import Toast from '../components/Toast'
+import ServiceContext from '../context/ServiceContext'
+import { useNavigate } from 'react-router-dom'
 
 const MechanicDashboard = () => {
-  const navigate = useNavigate()
-  const { authState, requests: contextRequests, updateRequest, addNotification } = useApp()
+  const { authState } = useApp()
   const userName = authState.user?.name || 'Mechanic'
-  const [showToast, setShowToast] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
-  const [toastType, setToastType] = useState('success')
-
-  // Use requests from context or fallback to default
-  // Filter to show only pending requests for mechanics
-  const requests = useMemo(() => {
-    if (contextRequests.length > 0) {
-      // Map requests to display format
-      return contextRequests
-        .filter(req => req.status === 'Pending' || req.status === 'pending')
-        .map(r => ({
-          id: r.id,
-          customerName: r.customerName || 'Customer',
-          serviceName: r.serviceName || r.service || 'Service',
-          urgency: r.urgency || 'normal',
-          price: r.price || r.finalPrice || 0,
-          status: r.status || 'Pending',
-        }))
+  const { serviceData , setServiceData } = useContext(ServiceContext)
+  const navigate = useNavigate()
+  
+  
+  const stats = useMemo(() => {
+    const requests = serviceData?.requests || []
+    return {
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'PENDING').length,
+      emergency: requests.filter(r => r.urgency === 'emergency').length,
+      accept: requests.filter(r => r.status === 'ACCEPTED').length,
+      rejected: requests.filter(r => r.status === 'REJECTED').length,
     }
-    
-    // Fallback to default data
-    return [
-      {
-        id: 1,
-        customerName: 'John Doe',
-        serviceName: 'Oil Change',
-        urgency: 'normal',
-        price: 74.99,
-        status: 'Pending',
-      },
-      {
-        id: 2,
-        customerName: 'Jane Smith',
-        serviceName: 'Brake Repair',
-        urgency: 'emergency',
-        price: 249.99,
-        status: 'Pending',
-      },
-      {
-        id: 3,
-        customerName: 'Mike Johnson',
-        serviceName: 'Tire Replacement',
-        urgency: 'normal',
-        price: 199.99,
-        status: 'Pending',
-      },
-      {
-        id: 4,
-        customerName: 'Sarah Williams',
-        serviceName: 'Engine Diagnostic',
-        urgency: 'normal',
-        price: 134.99,
-        status: 'Pending',
-      },
-      {
-        id: 5,
-        customerName: 'David Brown',
-        serviceName: 'AC Service',
-        urgency: 'emergency',
-        price: 194.99,
-        status: 'Pending',
-      },
-      {
-        id: 6,
-        customerName: 'Emily Davis',
-        serviceName: 'Battery Replacement',
-        urgency: 'normal',
-        price: 269.99,
-        status: 'Pending',
-      },
-    ]
-  }, [contextRequests])
+  }, [serviceData])
+  
 
-  // Handle accepting a request
-  const handleAcceptRequest = async (requestData) => {
-    try {
-      const requestId = requestData.requestId || requestData.id
-      
-      if (!requestId) {
-        throw new Error('Request ID not found')
-      }
-
-      await updateRequest(requestId, {
-        status: 'Accepted',
-        mechanicId: authState.user?.id,
-        mechanicName: authState.user?.name || 'Mechanic',
-      })
-
-      // Add notification
-      addNotification({
-        type: 'success',
-        title: 'Request Accepted',
-        message: `You have accepted the request for ${requestData.serviceName} from ${requestData.customerName}`,
-        userId: authState.user?.id,
-      })
-
-      // Show success toast
-      setToastMessage(`Request for ${requestData.serviceName} has been accepted!`)
-      setToastType('success')
-      setShowToast(true)
-    } catch (error) {
-      console.error('Error accepting request:', error)
-      setToastMessage('Failed to accept request. Please try again.')
-      setToastType('error')
-      setShowToast(true)
-    }
-  }
-
-  // Handle rejecting a request
-  const handleRejectRequest = async (requestData) => {
-    try {
-      const requestId = requestData.requestId || requestData.id
-      
-      if (!requestId) {
-        throw new Error('Request ID not found')
-      }
-
-      await updateRequest(requestId, {
-        status: 'Rejected',
-      })
-
-      // Add notification
-      addNotification({
-        type: 'info',
-        title: 'Request Rejected',
-        message: `You have rejected the request for ${requestData.serviceName} from ${requestData.customerName}`,
-        userId: authState.user?.id,
-      })
-
-      // Show info toast
-      setToastMessage(`Request for ${requestData.serviceName} has been rejected.`)
-      setToastType('info')
-      setShowToast(true)
-    } catch (error) {
-      console.error('Error rejecting request:', error)
-      setToastMessage('Failed to reject request. Please try again.')
-      setToastType('error')
-      setShowToast(true)
-    }
-  }
-
-  // Calculate stats
-  const totalRequests = requests.length
-  const pendingRequests = requests.filter((r) => r.status === 'Pending' || r.status === 'pending').length
-  const emergencyRequests = requests.filter(
-    (r) => r.urgency === 'emergency' || r.urgency === 'urgent'
-  ).length
-  const inProgressRequests = contextRequests.filter(
-    (r) => (r.status === 'In-Progress' || r.status === 'In Progress' || r.status === 'in-progress') && 
-           (r.mechanicId === authState.user?.id || r.mechanicName === authState.user?.name)
-  ).length
 
   return (
     <>
@@ -170,175 +33,138 @@ const MechanicDashboard = () => {
 
         <main className="flex-grow container mx-auto px-4 py-6 md:py-8 lg:py-10">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-8 md:mb-10">
-              <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6 md:p-8 transform transition-all duration-300 hover:shadow-2xl">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
-                  Welcome,{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
-                    {userName}
-                  </span>
-                  !
-                </h1>
-                <p className="text-gray-600 text-base md:text-lg">
-                  Review and manage incoming service requests
+           
+            <div className="mb-8">
+              <div className="bg-white/80 rounded-2xl shadow-xl p-6 flex justify-between items-center gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Welcome, <span className="text-indigo-600">{userName}</span>
+                  </h1>
+                  <p className="text-gray-600">
+                    Review and manage incoming service requests
+                  </p>
+                </div>
+                <div>
+                  <button 
+                  onClick={()=> navigate('/mechanic/history')}
+                  className="px-4 py-3 rounded-xl bg-indigo-600 text-white">
+                   View Request
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              <div className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm text-gray-600">Total Requests</p>
+                <p className="text-3xl font-bold text-indigo-600">
+                  {stats.total}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-3xl font-bold text-yellow-600">
+                  {stats.pending}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm text-gray-600">Emergency</p>
+                <p className="text-3xl font-bold text-red-600">
+                  {stats.emergency}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm text-gray-600">Accepted</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {stats.accept}
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow">
+                <p className="text-sm text-gray-600">Rejected</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {stats.rejected}
                 </p>
               </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-10">
-              <div
-                className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 p-4 md:p-6 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                role="region"
-                aria-label="Total requests statistic"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600 mb-1">
-                      Total Requests
-                    </p>
-                    <p className="text-3xl md:text-4xl font-bold text-indigo-600">
-                      {totalRequests}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-indigo-100 rounded-xl">
-                    <svg
-                      className="w-6 h-6 text-indigo-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+            <section>
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h2 className="text-2xl font-bold text-indigo-600 mb-4">
+                  Incoming Requests
+                </h2>
 
-              <div
-                className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 p-4 md:p-6 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                role="region"
-                aria-label="Pending requests statistic"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600 mb-1">
-                      Pending
-                    </p>
-                    <p className="text-3xl md:text-4xl font-bold text-yellow-600">
-                      {pendingRequests}
+                {!serviceData || serviceData.requests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">
+                      No service requests available.
                     </p>
                   </div>
-                  <div className="p-3 bg-yellow-100 rounded-xl">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                ) : (
+                  <div className="space-y-4">
+                    {serviceData.requests
+                      .filter((request) => request.status === "PENDING")
+                      .map((request, index) => (
+                        <div
+                          key={request.id || index}
+                          className="border rounded-xl p-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4"
+                        >
+                          <div className="flex-1">
+                            <p>
+                              <strong>Vehicle:</strong>{" "}
+                              {request.vehicle || "N/A"}
+                            </p>
+                            <p>
+                              <strong>Service Type:</strong>{" "}
+                              {request.serviceType || "N/A"}
+                            </p>
+                            <p>
+                              <strong>Status:</strong>{" "}
+                              <span
+                                className={`font-semibold ${
+                                  request.status === "PENDING"
+                                    ? "text-yellow-600"
+                                    : request.status === "IN_PROGRESS"
+                                    ? "text-purple-600"
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                {request.status || "PENDING"}
+                              </span>
+                            </p>
+                            <p>Price: {request.price || "N/A"}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() =>
+                                setServiceData({
+                                  type: "ACCEPT_REQUEST",
+                                  payload: { requestId: request.id },
+                                })
+                              }
+                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() =>
+                                setServiceData({
+                                  type: "REJECT_REQUEST",
+                                  payload: { requestId: request.id },
+                                })
+                              }
+                              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                </div>
-              </div>
-
-              <div
-                className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 p-4 md:p-6 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                role="region"
-                aria-label="Emergency requests statistic"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600 mb-1">
-                      Emergency
-                    </p>
-                    <p className="text-3xl md:text-4xl font-bold text-red-600">
-                      {emergencyRequests}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-red-100 rounded-xl">
-                    <svg
-                      className="w-6 h-6 text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 p-4 md:p-6 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                role="region"
-                aria-label="In progress requests statistic"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-600 mb-1">
-                      In Progress
-                    </p>
-                    <p className="text-3xl md:text-4xl font-bold text-purple-600">
-                      {inProgressRequests}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <svg
-                      className="w-6 h-6 text-purple-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Requests Section */}
-            <section aria-label="Incoming service requests">
-              <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 p-4 md:p-6 lg:p-8 transform transition-all duration-300 hover:shadow-3xl">
-                <div className="mb-6 md:mb-8">
-                  <h2 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-2">
-                    Incoming Requests
-                  </h2>
-                  <p className="text-gray-600 text-base md:text-lg">
-                    Review and respond to service requests from customers
-                  </p>
-                </div>
-
-                {/* RequestList Component */}
-                <RequestList
-                  requests={requests}
-                  onAcceptRequest={handleAcceptRequest}
-                  onRejectRequest={handleRejectRequest}
-                />
+                )}
               </div>
             </section>
           </div>
@@ -347,17 +173,9 @@ const MechanicDashboard = () => {
         <Footer />
       </div>
 
-      {/* Toast Notification */}
-      {showToast && (
-        <Toast
-          message={toastMessage}
-          type={toastType}
-          duration={3000}
-          onClose={() => setShowToast(false)}
-        />
-      )}
+      <Toast />
     </>
-  )
+  );
 }
 
 export default MechanicDashboard

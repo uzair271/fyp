@@ -13,6 +13,8 @@ import ProfilePage from './pages/ProfilePage'
 import MechanicDashboard from './pages/MechanicDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
+import Test from './pages/Test'
+import MechanicHistoryPage from './pages/MechanicHistoryPage'
 
 const AppRoutes = () => {
   const location = useLocation()
@@ -79,49 +81,45 @@ const AppRoutes = () => {
         <Route
           path="/customer/dashboard"
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              allowedRoles={['customer']}
-            >
+            
               <CustomerDashboard />
-            </ProtectedRoute>
+         
           }
         />
         <Route
           path="/customer/request"
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              allowedRoles={['customer']}
-            >
+           
               <ServiceRequestPage />
-            </ProtectedRoute>
+         
           }
         />
         <Route
           path="/customer/status/:id"
+          element={
+          
+              <RequestStatusWrapper />
+           
+          }
+        />
+        <Route
+          path="/customer/view-request"
           element={
             <ProtectedRoute
               isAuthenticated={isAuthenticated}
               userRole={userRole}
               allowedRoles={['customer']}
             >
-              <RequestStatusWrapper />
+              <Test />
             </ProtectedRoute>
           }
         />
         <Route
           path="/customer/history"
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              allowedRoles={['customer']}
-            >
+          
               <ServiceHistoryPage />
-            </ProtectedRoute>
+        
           }
         />
         <Route
@@ -140,14 +138,8 @@ const AppRoutes = () => {
         {/* Mechanic Routes */}
         <Route
           path="/mechanic/dashboard"
-          element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              allowedRoles={['mechanic']}
-            >
+          element={ 
               <MechanicDashboard />
-            </ProtectedRoute>
           }
         />
         <Route
@@ -173,6 +165,11 @@ const AppRoutes = () => {
               <ProfilePage />
             </ProtectedRoute>
           }
+        />
+
+        <Route
+          path="/mechanic/history"
+          element={<MechanicHistoryPage></MechanicHistoryPage>}
         />
 
         {/* Admin Routes (Optional) */}
